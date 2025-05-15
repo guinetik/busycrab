@@ -2,8 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
 
@@ -52,7 +50,6 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -79,37 +76,3 @@ jobs:
             artifacts/wokecrab-macos/wokecrab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  auto-tag:
-    name: Auto Tag on Master Push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/')
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Read Cargo.toml version
-        id: cargo_version
-        run: |
-          VERSION=$(grep '^version =' Cargo.toml | head -1 | sed 's/.*= *//' | sed 's/"//g')
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          if git rev-parse "v${{ steps.cargo_version.outputs.VERSION }}" >/dev/null 2>&1; then
-            echo "TAG_EXISTS=true" >> $GITHUB_OUTPUT
-          else
-            echo "TAG_EXISTS=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create and push tag
-        if: steps.check_tag.outputs.TAG_EXISTS == 'false'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git tag -a "v${{ steps.cargo_version.outputs.VERSION }}" -m "Release v${{ steps.cargo_version.outputs.VERSION }}"
-          git push origin "v${{ steps.cargo_version.outputs.VERSION }}"
