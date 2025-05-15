@@ -126,4 +126,4 @@ jobs:
             artifacts/wokecrab-windows.exe/wokecrab.exe
             artifacts/wokecrab-macos/wokecrab
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
