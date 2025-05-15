@@ -113,6 +113,12 @@ jobs:
         with:
           path: artifacts
 
+      - name: Rename artifacts for release
+        run: |
+          mv artifacts/wokecrab-linux/wokecrab artifacts/wokecrab-linux/wokecrab-linux-${{ needs.tag-and-release.outputs.version }}
+          mv artifacts/wokecrab-macos/wokecrab artifacts/wokecrab-macos/wokecrab-macos-${{ needs.tag-and-release.outputs.version }}
+          mv artifacts/wokecrab-windows.exe/wokecrab.exe artifacts/wokecrab-windows.exe/wokecrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
+
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -122,8 +128,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/wokecrab-linux
-            artifacts/wokecrab-windows.exe/wokecrab.exe
-            artifacts/wokecrab-macos
+            artifacts/wokecrab-linux/wokecrab-linux-${{ needs.tag-and-release.outputs.version }}
+            artifacts/wokecrab-windows.exe/wokecrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
+            artifacts/wokecrab-macos/wokecrab-macos-${{ needs.tag-and-release.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
