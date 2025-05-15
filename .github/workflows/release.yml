@@ -76,6 +76,12 @@ jobs:
         with:
           ref: v${{ needs.tag-and-release.outputs.version }}
 
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxdo-dev libx11-dev libxtst-dev
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
