@@ -122,8 +122,8 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/wokecrab-linux/wokecrab
-            artifacts/wokecrab-windows.exe/wokecrab.exe
-            artifacts/wokecrab-macos/wokecrab
+            artifacts/wokecrab-linux
+            artifacts/wokecrab-windows.exe
+            artifacts/wokecrab-macos
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
