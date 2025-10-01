@@ -1,6 +1,6 @@
 use std::process;
-use wokecrab::cli::Args;
-use wokecrab::WokeCrab;
+use busycrab::cli::Args;
+use busycrab::BusyCrab;
 use clap::Parser;
 
 pub fn main() {
@@ -13,7 +13,7 @@ pub fn main() {
         println!("  Motion type: {}", args.motion);
     }
     
-    let mut crab = WokeCrab::new(args.interval, args.wiggle)
+    let mut crab = BusyCrab::new(args.interval, args.wiggle)
         .with_verbose(args.verbose)
         .with_motion(&args.motion);
     

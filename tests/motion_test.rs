@@ -1,7 +1,7 @@
 mod common;
 
-use wokecrab::motion::crab::CrabMotion;
-use wokecrab::motion::Motion;
+use busycrab::motion::crab::CrabMotion;
+use busycrab::motion::Motion;
 
 // Create a simple mock motion implementation for testing
 struct MockMotion {

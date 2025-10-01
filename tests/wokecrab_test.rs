@@ -1,9 +1,9 @@
 mod common;
 
-use wokecrab::WokeCrab;
+use busycrab::BusyCrab;
 use std::time::Duration;
 use std::cell::RefCell;
-use wokecrab::{MouseController, PlatformTrait};
+use busycrab::{MouseController, PlatformTrait};
 
 /// A mock mouse controller for testing.
 pub struct MockMouseController {
@@ -70,39 +70,42 @@ impl PlatformTrait for MockPlatform {
 }
 
 #[test]
-fn test_wokecrab_initialization() {
-    // Test that WokeCrab can be created with valid parameters
-    let wokecrab = WokeCrab::new(60, 3);
-    assert_eq!(wokecrab.get_interval(), Duration::from_secs(60));
-    assert_eq!(wokecrab.get_wiggle_distance(), 3);
-    assert_eq!(wokecrab.is_verbose(), false);
-    assert_eq!(wokecrab.has_motion(), false);
+fn test_busycrab_initialization() {
+    // Test that BusyCrab can be created with valid parameters
+    let busycrab = BusyCrab::new(60, 3);
+    assert_eq!(busycrab.get_interval(), Duration::from_secs(60));
+    assert_eq!(busycrab.get_wiggle_distance(), 3);
+    assert_eq!(busycrab.is_verbose(), false);
+    assert_eq!(busycrab.has_motion(), false);
 }
 
 #[test]
-fn test_wokecrab_builder_pattern() {
+fn test_busycrab_builder_pattern() {
     // Test the builder pattern methods
-    let wokecrab = WokeCrab::new(30, 5)
+    let busycrab = BusyCrab::new(30, 5)
         .with_verbose(true)
         .with_motion("crab");
     
-    assert_eq!(wokecrab.get_interval(), Duration::from_secs(30));
-    assert_eq!(wokecrab.get_wiggle_distance(), 5);
-    assert_eq!(wokecrab.is_verbose(), true);
-    assert_eq!(wokecrab.has_motion(), true);
+    assert_eq!(busycrab.get_interval(), Duration::from_secs(30));
+    assert_eq!(busycrab.get_wiggle_distance(), 5);
+    assert_eq!(busycrab.is_verbose(), true);
+    assert_eq!(busycrab.has_motion(), true);
 }
 
 #[test]
 fn test_motion_selection() {
     // Test that motion selection works correctly
-    let crab_motion = WokeCrab::new(60, 3).with_motion("crab");
+    let crab_motion = BusyCrab::new(60, 3).with_motion("crab");
     assert_eq!(crab_motion.has_motion(), true);
     
-    let no_motion = WokeCrab::new(60, 3).with_motion("none");
+    let matrix_motion = BusyCrab::new(60, 3).with_motion("matrix");
+    assert_eq!(matrix_motion.has_motion(), true);
+    
+    let no_motion = BusyCrab::new(60, 3).with_motion("none");
     assert_eq!(no_motion.has_motion(), false);
     
     // Invalid motion type should default to none
-    let invalid_motion = WokeCrab::new(60, 3).with_motion("invalid");
+    let invalid_motion = BusyCrab::new(60, 3).with_motion("invalid");
     assert_eq!(invalid_motion.has_motion(), false);
 }
 
@@ -112,10 +115,10 @@ fn test_simulate_activity() {
     let mock_mouse = Box::new(MockMouseController::new());
     let mock_ptr = &*mock_mouse as *const MockMouseController;
     
-    let mut wokecrab = WokeCrab::with_mouse_controller(60, 5, mock_mouse);
-    wokecrab.simulate_activity();
+    let mut busycrab = BusyCrab::with_mouse_controller(60, 5, mock_mouse);
+    busycrab.simulate_activity();
     
-    // Safe because we know the mock is still alive inside wokecrab
+    // Safe because we know the mock is still alive inside busycrab
     let mock = unsafe { &*mock_ptr };
     
     assert_eq!(mock.call_count(), 2);
@@ -133,11 +136,11 @@ fn test_activity_cycle() {
     let mouse_ptr = &*mock_mouse as *const MockMouseController;
     let platform_ptr = &*mock_platform as *const MockPlatform;
     
-    let mut wokecrab = WokeCrab::for_testing(60, 5, mock_mouse, mock_platform);
+    let mut busycrab = BusyCrab::for_testing(60, 5, mock_mouse, mock_platform);
     let mut count = 0;
-    let result = wokecrab.execute_activity_cycle(&mut count);
+    let result = busycrab.execute_activity_cycle(&mut count);
     
-    // Safe because we know the mocks are still alive inside wokecrab
+    // Safe because we know the mocks are still alive inside busycrab
     let mouse = unsafe { &*mouse_ptr };
     let platform = unsafe { &*platform_ptr };
     
@@ -153,9 +156,9 @@ fn test_platform_error() {
     let mock_mouse = Box::new(MockMouseController::new());
     let mock_platform = Box::new(MockPlatform::with_error("Test error"));
     
-    let mut wokecrab = WokeCrab::for_testing(60, 5, mock_mouse, mock_platform);
+    let mut busycrab = BusyCrab::for_testing(60, 5, mock_mouse, mock_platform);
     let mut count = 0;
-    let result = wokecrab.execute_activity_cycle(&mut count);
+    let result = busycrab.execute_activity_cycle(&mut count);
     
     assert!(result.is_err());
     assert_eq!(result.unwrap_err(), "Test error");

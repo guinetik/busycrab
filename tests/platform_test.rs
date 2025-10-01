@@ -1,6 +1,6 @@
 mod common;
 
-use wokecrab::platform::{Platform, PlatformTrait};
+use busycrab::platform::{Platform, PlatformTrait};
 
 #[test]
 fn test_platform_creation() {

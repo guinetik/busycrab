@@ -61,14 +61,14 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            artifact_name: wokecrab
-            asset_name: wokecrab-linux
+            artifact_name: busycrab
+            asset_name: busycrab-linux
           - os: windows-latest
-            artifact_name: wokecrab.exe
-            asset_name: wokecrab-windows.exe
+            artifact_name: busycrab.exe
+            asset_name: busycrab-windows.exe
           - os: macos-latest
-            artifact_name: wokecrab
-            asset_name: wokecrab-macos
+            artifact_name: busycrab
+            asset_name: busycrab-macos
 
     steps:
       - name: Checkout code
@@ -115,21 +115,21 @@ jobs:
 
       - name: Rename artifacts for release
         run: |
-          mv artifacts/wokecrab-linux/wokecrab artifacts/wokecrab-linux/wokecrab-linux-${{ needs.tag-and-release.outputs.version }}
-          mv artifacts/wokecrab-macos/wokecrab artifacts/wokecrab-macos/wokecrab-macos-${{ needs.tag-and-release.outputs.version }}
-          mv artifacts/wokecrab-windows.exe/wokecrab.exe artifacts/wokecrab-windows.exe/wokecrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
+          mv artifacts/busycrab-linux/busycrab artifacts/busycrab-linux/busycrab-linux-${{ needs.tag-and-release.outputs.version }}
+          mv artifacts/busycrab-macos/busycrab artifacts/busycrab-macos/busycrab-macos-${{ needs.tag-and-release.outputs.version }}
+          mv artifacts/busycrab-windows.exe/busycrab.exe artifacts/busycrab-windows.exe/busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
 
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.tag-and-release.outputs.version }}
-          name: WokeCrab v${{ needs.tag-and-release.outputs.version }}
+          name: BusyCrab v${{ needs.tag-and-release.outputs.version }}
           draft: false
           prerelease: false
           files: |
-            artifacts/wokecrab-linux/wokecrab-linux-${{ needs.tag-and-release.outputs.version }}
-            artifacts/wokecrab-windows.exe/wokecrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
-            artifacts/wokecrab-macos/wokecrab-macos-${{ needs.tag-and-release.outputs.version }}
+            artifacts/busycrab-linux/busycrab-linux-${{ needs.tag-and-release.outputs.version }}
+            artifacts/busycrab-windows.exe/busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
+            artifacts/busycrab-macos/busycrab-macos-${{ needs.tag-and-release.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}

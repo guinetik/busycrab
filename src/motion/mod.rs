@@ -3,3 +3,4 @@ pub trait Motion: Send {
 }
 
 pub mod crab;
+pub mod matrix;

@@ -1,4 +1,4 @@
-//! # WokeCrab
+//! # BusyCrab
 //! A utility that prevents sleep and simulates mouse activity to keep your system active.
 //! ## Features
 //! * Prevents system sleep
@@ -6,7 +6,7 @@
 //! * Shows terminal animations
 //! * Handles Ctrl+C for clean shutdown
 //! ## Core components
-//! * `WokeCrab`: Main application struct
+//! * `BusyCrab`: Main application struct
 //! * `platform`: Platform-specific functionality
 //! * `motion`: Terminal animations
 
@@ -26,6 +26,7 @@ pub mod motion;
 pub mod platform;
 
 use motion::crab::CrabMotion;
+use motion::matrix::MatrixMotion;
 use motion::Motion;
 pub use platform::Platform;
 pub use platform::PlatformTrait;
@@ -78,7 +79,7 @@ impl MouseController for DefaultMouseController {
 type AnimationThread = Option<(thread::JoinHandle<()>, Arc<Mutex<bool>>)>;
 
 /// Main application struct.
-pub struct WokeCrab {
+pub struct BusyCrab {
     /// Mouse controller
     mouse: Box<dyn MouseController>,
     /// Platform implementation
@@ -93,8 +94,8 @@ pub struct WokeCrab {
     motion: Option<Box<dyn Motion + Send>>,
 }
 
-/// WokeCrab implementation.
-impl WokeCrab {
+/// BusyCrab implementation.
+impl BusyCrab {
     /// Creates a new instance.
     ///
     /// * `interval_secs` - Seconds between mouse movements
@@ -157,7 +158,7 @@ impl WokeCrab {
 
     /// Shows startup info.
     fn display_startup_info(&self) {
-        println!("🦀 WokeCrab started. Press Ctrl+C to exit.");
+        println!("🦀 BusyCrab started. Press Ctrl+C to exit.");
         println!(
             "Running with interval: {} seconds, wiggle: {} pixels",
             self.interval.as_secs(),
@@ -250,7 +251,7 @@ impl WokeCrab {
     /// Shows shutdown message.
     fn display_shutdown_message(&self) {
         println!("");
-        println!("🦀 WokeCrab shut down successfully.");
+        println!("🦀 BusyCrab shut down successfully.");
     }
 
     /// Moves mouse slightly to simulate activity.
@@ -297,6 +298,7 @@ impl WokeCrab {
     pub fn with_motion(mut self, motion_type: &str) -> Self {
         self.motion = match motion_type.to_lowercase().as_str() {
             "crab" => Some(Box::new(CrabMotion::new())),
+            "matrix" => Some(Box::new(MatrixMotion::new())),
             "none" | _ => None,
         };
         self

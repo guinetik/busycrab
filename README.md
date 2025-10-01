@@ -1,10 +1,10 @@
-# 🦀 WokeCrab
+# 🦀 BusyCrab
 
-**WokeCrab** is a lightweight Rust utility that prevents your computer from sleeping and simulates subtle mouse activity to keep your status green on apps like Microsoft Teams or Slack.
+**BusyCrab** is a lightweight Rust utility that prevents your computer from sleeping and simulates subtle mouse activity to keep your status green on apps like Microsoft Teams or Slack.
 
 ## About This Project
 
-This is my learning project for exploring Rust's features and ecosystem. I created WokeCrab to experiment with several modern Rust concepts:
+This is my learning project for exploring Rust's features and ecosystem. I was looking for a use-case for a systems language and I created BusyCrab to experiment with several modern Rust concepts:
 
 - **Multi-threading and concurrency** - Managing separate threads with safe communication
 - **Cross-platform development** - Supporting Windows and macOS with conditional compilation
@@ -52,7 +52,7 @@ This design allows the animation to run smoothly without being tied to the mouse
 ## Installation
 
 ```bash
-cargo install wokecrab
+cargo install busycrab
 ```
 
 ## Basic Usage
@@ -60,7 +60,7 @@ cargo install wokecrab
 Run with default settings (moves mouse by 3 pixels every 60 seconds):
 
 ```bash
-wokecrab
+busycrab
 ```
 
 ## Customization
@@ -68,15 +68,16 @@ wokecrab
 Adjust the interval and movement distance:
 
 ```bash
-wokecrab --interval 120 --wiggle 5  # 2-minute interval, 5-pixel movement
-wokecrab -i 30 -w 2                 # 30-second interval, 2-pixel movement
+busycrab --interval 120 --wiggle 5  # 2-minute interval, 5-pixel movement
+busycrab -i 30 -w 2                 # 30-second interval, 2-pixel movement
 ```
 
 Select different motion animations:
 
 ```bash
-wokecrab --motion crab              # Default crab animation
-wokecrab -m none                    # No animation
+busycrab --motion crab              # Default crab animation
+busycrab --motion matrix            # Matrix-style falling characters
+busycrab -m none                    # No animation
 ```
 
 See [USAGE.md](USAGE.md) for more examples and options.
@@ -96,7 +97,7 @@ cargo test -- --nocapture
 cargo test -- --ignored
 
 # Run a specific test
-cargo test test_wokecrab_initialization
+cargo test test_busycrab_initialization
 
 # Coverage Support
 cargo llvm-cov --html
@@ -104,7 +105,7 @@ cargo llvm-cov --html
 
 ## Release Process
 
-WokeCrab uses GitHub Actions for automated releases. The workflow is as follows:
+BusyCrab uses GitHub Actions for automated releases. The workflow is as follows:
 
 1. Update the version number in `Cargo.toml` when you're ready to release
 2. Push your changes to the `master` branch
@@ -113,7 +114,7 @@ WokeCrab uses GitHub Actions for automated releases. The workflow is as follows:
    - Create a new tag based on the version in `Cargo.toml`
    - Generate a GitHub release with the compiled binaries
 
-You can find all releases in the [GitHub Releases](https://github.com/guinetik/wokecrab/releases) section.
+You can find all releases in the [GitHub Releases](https://github.com/guinetik/busycrab/releases) section.
 
 ## Contributing
 

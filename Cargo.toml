@@ -1,10 +1,10 @@
 [package]
-name = "wokecrab"
+name = "busycrab"
 version = "0.0.1"
 edition = "2021"
 description = "🦀 A Rust utility that prevents sleep and fakes activity to keep your status green."
 license = "Apache-2.0"
-repository = "https://github.com/guinetik/wokecrab"
+repository = "https://github.com/guinetik/busycrab"
 
 [dependencies]
 enigo = "0.1.3"
