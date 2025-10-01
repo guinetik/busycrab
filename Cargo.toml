@@ -1,6 +1,6 @@
 [package]
 name = "busycrab"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 description = "🦀 A Rust utility that prevents sleep and fakes activity to keep your status green."
 license = "Apache-2.0"
