@@ -27,6 +27,8 @@ pub mod platform;
 
 use motion::crab::CrabMotion;
 use motion::matrix::MatrixMotion;
+use motion::mandelbrot::MandelbrotMotion;
+use motion::clock::ClockMotion;
 use motion::Motion;
 pub use platform::Platform;
 pub use platform::PlatformTrait;
@@ -299,6 +301,8 @@ impl BusyCrab {
         self.motion = match motion_type.to_lowercase().as_str() {
             "crab" => Some(Box::new(CrabMotion::new())),
             "matrix" => Some(Box::new(MatrixMotion::new())),
+            "mandelbrot" => Some(Box::new(MandelbrotMotion::new())),
+            "clock" => Some(Box::new(ClockMotion::new())),
             "none" | _ => None,
         };
         self

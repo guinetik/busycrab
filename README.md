@@ -19,7 +19,11 @@ This is my learning project for exploring Rust's features and ecosystem. I was l
 - Jiggles your mouse cursor by a tiny amount every interval  
 - Helps you avoid being marked "idle" or "away" without annoying interruptions  
 - Fully customizable with command-line options
-- Features fun terminal animations with an extensible motion system
+- Features fun terminal animations with an extensible motion system:
+  - **Crab** - Original bouncing crab animation
+  - **Matrix** - Digital rain with falling characters
+  - **Mandelbrot** - Animated fractal with zoom and rotation
+  - **Clock** - Large ASCII clock with cycling characters
 - Gracefully shuts down with Ctrl+C
 
 ## Technical Implementation
@@ -31,6 +35,8 @@ This is my learning project for exploring Rust's features and ecosystem. I was l
 - **ctrlc** - Library for handling Ctrl+C and other termination signals
 - **term_size** - Small utility for getting terminal dimensions
 - **cfg-if** - Helper macro for conditional compilation based on target platform
+- **rand** - Random number generation for animations
+- **chrono** - Date and time handling for the clock animation
 - **winapi** - Windows API bindings (used for Windows-specific functionality)
 
 ### Concurrent Animation System
@@ -77,6 +83,8 @@ Select different motion animations:
 ```bash
 busycrab --motion crab              # Default crab animation
 busycrab --motion matrix            # Matrix-style falling characters
+busycrab --motion mandelbrot        # Animated Mandelbrot fractal with zoom
+busycrab --motion clock             # Large ASCII clock with cycling characters
 busycrab -m none                    # No animation
 ```
 

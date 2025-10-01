@@ -16,7 +16,7 @@ pub struct Args {
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
     
-    /// Select motion animation type (crab, matrix, none)
+    /// Select motion animation type (crab, matrix, mandelbrot, clock, none)
     #[arg(short, long, default_value = "crab")]
     pub motion: String,
 }
