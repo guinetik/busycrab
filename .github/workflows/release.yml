@@ -119,6 +119,30 @@ jobs:
           mv artifacts/busycrab-macos/busycrab artifacts/busycrab-macos/busycrab-macos-${{ needs.tag-and-release.outputs.version }}
           mv artifacts/busycrab-windows.exe/busycrab.exe artifacts/busycrab-windows.exe/busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
 
+      - name: Create Windows zip file
+        run: |
+          cd artifacts/busycrab-windows.exe
+          # Create a simple README for the zip file
+          cat > README.txt << 'EOF'
+          🦀 BusyCrab v${{ needs.tag-and-release.outputs.version }}
+          
+          A Rust utility that prevents sleep and fakes activity to keep your status green.
+          
+          USAGE:
+          - Double-click busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe to run with default settings
+          - Or open Command Prompt/PowerShell and run: .\busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe --help
+          
+          EXAMPLES:
+          .\busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe --motion matrix --interval 30
+          .\busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe --motion crab --verbose
+          
+          Press Ctrl+C to exit the program.
+          
+          For more information, visit: https://github.com/guinetik/busycrab
+          EOF
+          # Create the zip file with both the executable and README
+          zip busycrab-windows-${{ needs.tag-and-release.outputs.version }}.zip busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe README.txt
+
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -130,6 +154,7 @@ jobs:
           files: |
             artifacts/busycrab-linux/busycrab-linux-${{ needs.tag-and-release.outputs.version }}
             artifacts/busycrab-windows.exe/busycrab-windows-${{ needs.tag-and-release.outputs.version }}.exe
+            artifacts/busycrab-windows.exe/busycrab-windows-${{ needs.tag-and-release.outputs.version }}.zip
             artifacts/busycrab-macos/busycrab-macos-${{ needs.tag-and-release.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_GITHUB }}
