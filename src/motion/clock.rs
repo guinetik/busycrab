@@ -7,10 +7,7 @@ pub struct ClockMotion {
     terminal_height: usize,
     first_update: bool,
     frame_count: u32,
-    
-    // Clock parameters
-    last_second: u64,
-    cycling_chars: Vec<Vec<char>>,
+    skew_offset: f64, // Horizontal offset per vertical line for 3D effect
 }
 
 impl ClockMotion {
@@ -20,37 +17,12 @@ impl ClockMotion {
             None => (78, 20),
         };
 
-        // Define cycling characters for each digit (0-9)
-        let cycling_chars = vec![
-            // 0
-            vec!['0', 'O', 'o', '°', '○', '◯', '◉', '●', '◆', '◇', '◈', '◊'],
-            // 1
-            vec!['1', 'I', 'l', '|', '│', '┃', '║', '╏', '╎', '┊', '┋', '┆'],
-            // 2
-            vec!['2', 'Z', 'z', 'Ƶ', 'ƶ', 'Ɀ', 'Ȿ', 'ɀ', 'Ɂ', 'ɂ', 'Ƀ', 'Ʉ'],
-            // 3
-            vec!['3', 'E', 'e', 'Ɛ', 'ε', 'ɛ', '∃', '∄', '∈', '∉', '∊', '∋'],
-            // 4
-            vec!['4', 'A', 'a', '∀', '∁', '∂', '∃', '∄', '∅', '∆', '∇', '∈'],
-            // 5
-            vec!['5', 'S', 's', '∫', '∬', '∭', '∮', '∯', '∰', '∱', '∲', '∳'],
-            // 6
-            vec!['6', 'G', 'g', 'Γ', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ'],
-            // 7
-            vec!['7', 'T', 't', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω', 'ϖ', 'ϗ', 'Ϙ'],
-            // 8
-            vec!['8', 'B', 'b', '∞', '∝', '∟', '∠', '∡', '∢', '∣', '∤', '∥'],
-            // 9
-            vec!['9', 'P', 'p', 'π', 'ϖ', 'ϗ', 'Ϙ', 'ϙ', 'Ϛ', 'ϛ', 'Ϝ', 'ϝ'],
-        ];
-
         Self {
             terminal_width: width,
             terminal_height: height,
             first_update: true,
             frame_count: 0,
-            last_second: 0,
-            cycling_chars,
+            skew_offset: 0.4, // How much to skew each line
         }
     }
 
@@ -59,135 +31,154 @@ impl ClockMotion {
         let hours = now.hour() as u8;
         let minutes = now.minute() as u8;
         let seconds = now.second() as u8;
-        
+
         (hours, minutes, seconds)
     }
 
-    fn get_cycling_char(&self, digit: u8, frame: u32) -> char {
-        let chars = &self.cycling_chars[digit as usize];
-        let index = (frame / 3) as usize % chars.len(); // Change every 3 frames
-        chars[index]
-    }
-
-    fn draw_digit(&self, digit: u8, frame: u32) -> Vec<String> {
-        let char_to_use = self.get_cycling_char(digit, frame);
-        
-        match digit {
+    // Get 7-segment pattern for a digit (5 rows x 3 columns of segments)
+    // Returns a 2D grid where true = filled
+    fn get_digit_pattern(digit: u8) -> Vec<Vec<bool>> {
+        let patterns = match digit {
             0 => vec![
-                format!(" _____ "),
-                format!("|     |"),
-                format!("|  {}  |", char_to_use),
-                format!("|     |"),
-                format!("|_____|"),
+                vec![true,  true,  true ],  // top
+                vec![true,  false, true ],  // upper middle
+                vec![true,  false, true ],  // middle
+                vec![true,  false, true ],  // lower middle
+                vec![true,  true,  true ],  // bottom
             ],
             1 => vec![
-                format!("   |   "),
-                format!("   |   "),
-                format!("   {}   ", char_to_use),
-                format!("   |   "),
-                format!("   |   "),
+                vec![false, false, true ],
+                vec![false, false, true ],
+                vec![false, false, true ],
+                vec![false, false, true ],
+                vec![false, false, true ],
             ],
             2 => vec![
-                format!(" _____ "),
-                format!("      |"),
-                format!(" _____|"),
-                format!("|      "),
-                format!("|_____ "),
+                vec![true,  true,  true ],
+                vec![false, false, true ],
+                vec![true,  true,  true ],
+                vec![true,  false, false],
+                vec![true,  true,  true ],
             ],
             3 => vec![
-                format!(" _____ "),
-                format!("      |"),
-                format!(" _____|"),
-                format!("      |"),
-                format!(" _____|"),
+                vec![true,  true,  true ],
+                vec![false, false, true ],
+                vec![true,  true,  true ],
+                vec![false, false, true ],
+                vec![true,  true,  true ],
             ],
             4 => vec![
-                format!("|     |"),
-                format!("|     |"),
-                format!("|_____|"),
-                format!("      |"),
-                format!("      |"),
+                vec![true,  false, true ],
+                vec![true,  false, true ],
+                vec![true,  true,  true ],
+                vec![false, false, true ],
+                vec![false, false, true ],
             ],
             5 => vec![
-                format!(" _____ "),
-                format!("|      "),
-                format!("|_____ "),
-                format!("      |"),
-                format!(" _____|"),
+                vec![true,  true,  true ],
+                vec![true,  false, false],
+                vec![true,  true,  true ],
+                vec![false, false, true ],
+                vec![true,  true,  true ],
             ],
             6 => vec![
-                format!(" _____ "),
-                format!("|      "),
-                format!("|_____ "),
-                format!("|     |"),
-                format!("|_____|"),
+                vec![true,  true,  true ],
+                vec![true,  false, false],
+                vec![true,  true,  true ],
+                vec![true,  false, true ],
+                vec![true,  true,  true ],
             ],
             7 => vec![
-                format!(" _____ "),
-                format!("      |"),
-                format!("      |"),
-                format!("      |"),
-                format!("      |"),
+                vec![true,  true,  true ],
+                vec![false, false, true ],
+                vec![false, false, true ],
+                vec![false, false, true ],
+                vec![false, false, true ],
             ],
             8 => vec![
-                format!(" _____ "),
-                format!("|     |"),
-                format!("|_____|"),
-                format!("|     |"),
-                format!("|_____|"),
+                vec![true,  true,  true ],
+                vec![true,  false, true ],
+                vec![true,  true,  true ],
+                vec![true,  false, true ],
+                vec![true,  true,  true ],
             ],
             9 => vec![
-                format!(" _____ "),
-                format!("|     |"),
-                format!("|_____|"),
-                format!("      |"),
-                format!(" _____|"),
+                vec![true,  true,  true ],
+                vec![true,  false, true ],
+                vec![true,  true,  true ],
+                vec![false, false, true ],
+                vec![true,  true,  true ],
             ],
             _ => vec![
-                format!("       "),
-                format!("       "),
-                format!("       "),
-                format!("       "),
-                format!("       "),
+                vec![false, false, false],
+                vec![false, false, false],
+                vec![false, false, false],
+                vec![false, false, false],
+                vec![false, false, false],
             ],
+        };
+        patterns
+    }
+
+    // Draw a digit with horizontal dot lines and skew
+    fn render_digit_with_skew(&self, digit: u8, start_x: usize, start_y: usize, buffer: &mut Vec<Vec<char>>) {
+        let pattern = Self::get_digit_pattern(digit);
+        let digit_height = 15; // Height in terminal rows
+        let digit_width = 12;  // Width in characters
+        let segment_height = 3; // Each pattern row takes 3 terminal rows
+
+        for (pattern_row, rows) in pattern.iter().enumerate() {
+            for (pattern_col, &filled) in rows.iter().enumerate() {
+                if !filled {
+                    continue;
+                }
+
+                // Calculate segment position
+                let seg_x = pattern_col * 4;
+                let seg_y = pattern_row * segment_height;
+
+                // Draw horizontal scanlines for this segment
+                for line in 0..segment_height {
+                    let y = start_y + seg_y + line;
+                    if y >= buffer.len() {
+                        continue;
+                    }
+
+                    // Apply skew: higher lines are more offset to the right
+                    let skew = ((digit_height - (seg_y + line)) as f64 * self.skew_offset) as usize;
+
+                    // Draw dots across the segment width
+                    for dx in 0..4 {
+                        let x = start_x + seg_x + dx + skew;
+                        if x < buffer[y].len() && x < start_x + digit_width + digit_height {
+                            buffer[y][x] = if dx % 2 == 0 { '●' } else { '•' };
+                        }
+                    }
+                }
+            }
         }
     }
 
-    fn draw_colon() -> Vec<String> {
-        vec![
-            format!("       "),
-            format!("   |   "),
-            format!("       "),
-            format!("   |   "),
-            format!("       "),
-        ]
-    }
+    // Draw a colon separator
+    fn render_colon_with_skew(&self, start_x: usize, start_y: usize, buffer: &mut Vec<Vec<char>>) {
+        let digit_height = 15;
+        let positions = [5, 10]; // Y positions for the two dots
 
-    fn center_clock(&self, clock_lines: &[String]) -> Vec<String> {
-        let max_width = clock_lines.iter().map(|line| line.len()).max().unwrap_or(0);
-        let start_col = (self.terminal_width.saturating_sub(max_width)) / 2;
-        let start_row = (self.terminal_height.saturating_sub(clock_lines.len())) / 2;
-        
-        let mut centered_lines = Vec::new();
-        
-        // Add empty lines at the top
-        for _ in 0..start_row {
-            centered_lines.push(" ".repeat(self.terminal_width));
+        for &y_offset in &positions {
+            let y = start_y + y_offset;
+            if y >= buffer.len() {
+                continue;
+            }
+
+            let skew = ((digit_height - y_offset) as f64 * self.skew_offset) as usize;
+
+            for dx in 0..3 {
+                let x = start_x + dx + skew;
+                if x < buffer[y].len() {
+                    buffer[y][x] = '●';
+                }
+            }
         }
-        
-        // Add clock lines with proper centering
-        for line in clock_lines {
-            let padding = " ".repeat(start_col);
-            let full_line = format!("{}{}", padding, line);
-            centered_lines.push(full_line);
-        }
-        
-        // Fill remaining lines
-        while centered_lines.len() < self.terminal_height {
-            centered_lines.push(" ".repeat(self.terminal_width));
-        }
-        
-        centered_lines
     }
 }
 
@@ -208,56 +199,71 @@ impl Motion for ClockMotion {
 
         // Get current time
         let (hours, minutes, seconds) = Self::get_current_time();
-        
-        // Only update if second changed (to avoid flickering)
-        let current_second = seconds as u64;
-        if current_second != self.last_second {
-            self.last_second = current_second;
-        }
 
-        // Clear screen and move cursor to top
+        // Extract digits
+        let h1 = hours / 10;
+        let h2 = hours % 10;
+        let m1 = minutes / 10;
+        let m2 = minutes % 10;
+        let s1 = seconds / 10;
+        let s2 = seconds % 10;
+
+        // Create buffer
+        let mut buffer = vec![vec![' '; self.terminal_width]; self.terminal_height];
+
+        // Calculate positions for digits
+        let digit_width = 20;  // Includes skew space
+        let colon_width = 8;
+        let total_width = digit_width * 6 + colon_width * 2;
+        let start_x = if self.terminal_width > total_width {
+            (self.terminal_width - total_width) / 2
+        } else {
+            5
+        };
+        let start_y = if self.terminal_height > 20 {
+            (self.terminal_height - 20) / 2
+        } else {
+            2
+        };
+
+        let mut x = start_x;
+
+        // Render HH:MM:SS
+        self.render_digit_with_skew(h1, x, start_y, &mut buffer);
+        x += digit_width;
+
+        self.render_digit_with_skew(h2, x, start_y, &mut buffer);
+        x += digit_width;
+
+        self.render_colon_with_skew(x, start_y, &mut buffer);
+        x += colon_width;
+
+        self.render_digit_with_skew(m1, x, start_y, &mut buffer);
+        x += digit_width;
+
+        self.render_digit_with_skew(m2, x, start_y, &mut buffer);
+        x += digit_width;
+
+        self.render_colon_with_skew(x, start_y, &mut buffer);
+        x += colon_width;
+
+        self.render_digit_with_skew(s1, x, start_y, &mut buffer);
+        x += digit_width;
+
+        self.render_digit_with_skew(s2, x, start_y, &mut buffer);
+
+        // Clear screen and render
         print!("\x1B[2J\x1B[H");
 
-        // Draw the clock
-        let hour_tens = hours / 10;
-        let hour_ones = hours % 10;
-        let minute_tens = minutes / 10;
-        let minute_ones = minutes % 10;
-        let second_tens = seconds / 10;
-        let second_ones = seconds % 10;
-
-        let mut clock_lines = Vec::new();
-        
-        // Draw each digit and combine them
-        let hour_tens_lines = self.draw_digit(hour_tens, self.frame_count);
-        let hour_ones_lines = self.draw_digit(hour_ones, self.frame_count);
-        let colon1_lines = Self::draw_colon();
-        let minute_tens_lines = self.draw_digit(minute_tens, self.frame_count);
-        let minute_ones_lines = self.draw_digit(minute_ones, self.frame_count);
-        let colon2_lines = Self::draw_colon();
-        let second_tens_lines = self.draw_digit(second_tens, self.frame_count);
-        let second_ones_lines = self.draw_digit(second_ones, self.frame_count);
-
-        // Combine all lines
-        for i in 0..5 {
-            let mut combined_line = String::new();
-            combined_line.push_str(&hour_tens_lines[i]);
-            combined_line.push_str(&hour_ones_lines[i]);
-            combined_line.push_str(&colon1_lines[i]);
-            combined_line.push_str(&minute_tens_lines[i]);
-            combined_line.push_str(&minute_ones_lines[i]);
-            combined_line.push_str(&colon2_lines[i]);
-            combined_line.push_str(&second_tens_lines[i]);
-            combined_line.push_str(&second_ones_lines[i]);
-            clock_lines.push(combined_line);
-        }
-
-        // Center the clock on screen
-        let centered_lines = self.center_clock(&clock_lines);
-
-        // Print the clock in white
-        for line in centered_lines.iter() {
-            println!("\x1B[38;5;255m{}\x1B[0m", line);
+        for row in &buffer {
+            for &ch in row {
+                match ch {
+                    '●' => print!("\x1B[38;5;51m{}\x1B[0m", ch),  // Bright cyan
+                    '•' => print!("\x1B[38;5;45m{}\x1B[0m", ch),  // Medium cyan
+                    _ => print!("{}", ch),
+                }
+            }
+            println!();
         }
 
         // Reset color and flush

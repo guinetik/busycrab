@@ -25,10 +25,10 @@ pub mod cli;
 pub mod motion;
 pub mod platform;
 
-use motion::crab::CrabMotion;
-use motion::matrix::MatrixMotion;
-use motion::mandelbrot::MandelbrotMotion;
 use motion::clock::ClockMotion;
+use motion::crab::CrabMotion;
+use motion::mandelbrot::MandelbrotMotion;
+use motion::matrix::MatrixMotion;
 use motion::Motion;
 pub use platform::Platform;
 pub use platform::PlatformTrait;
@@ -37,7 +37,7 @@ pub use platform::PlatformTrait;
 /// Abstracts mouse movement for real control and testing.
 pub trait MouseController {
     /// Moves the mouse cursor relative to its current position.
-    /// 
+    ///
     /// * `x` - Horizontal movement in pixels
     /// * `y` - Vertical movement in pixels
     fn mouse_move_relative(&mut self, x: i32, y: i32);
@@ -198,10 +198,10 @@ impl BusyCrab {
     pub fn execute_activity_cycle(&mut self, activity_count: &mut u64) -> Result<(), &'static str> {
         self.platform.prevent_sleep()?;
         self.simulate_activity();
-        
+
         *activity_count += 1;
         self.log_activity_status(*activity_count);
-        
+
         Ok(())
     }
 
@@ -263,7 +263,7 @@ impl BusyCrab {
             io::stdout().flush().unwrap();
             println!("Moving mouse by {} pixels", self.wiggle_distance);
         }
-        
+
         self.mouse.mouse_move_relative(self.wiggle_distance, 0);
         thread::sleep(Duration::from_millis(100));
         self.mouse.mouse_move_relative(-self.wiggle_distance, 0);
@@ -328,5 +328,3 @@ impl BusyCrab {
         self.motion.is_some()
     }
 }
-
-

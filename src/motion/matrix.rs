@@ -6,7 +6,9 @@ pub struct MatrixMotion {
     columns: usize,
     rows: usize,
     drops: Vec<f32>, // Position of each drop (can be negative for off-screen)
-    chars: Vec<char>, // Grid of characters
+    drop_speeds: Vec<f32>, // Speed of each drop
+    trail_lengths: Vec<usize>, // Length of each trail
+    chars: Vec<Vec<char>>, // Grid of characters (column-major for trails)
     terminal_width: usize,
     terminal_height: usize,
     first_update: bool,
@@ -21,40 +23,57 @@ impl MatrixMotion {
             None => (78, 20),
         };
 
-        // Custom symbols including GUINETIK as requested
+        // Custom symbols - more Katakana-like for authentic Matrix feel
         let symbols = vec![
+            // Half-width Katakana and Latin characters
+            'ｦ', 'ｧ', 'ｨ', 'ｩ', 'ｪ', 'ｫ', 'ｬ', 'ｭ', 'ｮ', 'ｯ',
+            'ｰ', 'ｱ', 'ｲ', 'ｳ', 'ｴ', 'ｵ', 'ｶ', 'ｷ', 'ｸ', 'ｹ',
+            'ｺ', 'ｻ', 'ｼ', 'ｽ', 'ｾ', 'ｿ', 'ﾀ', 'ﾁ', 'ﾂ', 'ﾃ',
+            'ﾄ', 'ﾅ', 'ﾆ', 'ﾇ', 'ﾈ', 'ﾉ', 'ﾊ', 'ﾋ', 'ﾌ', 'ﾍ',
+            'ﾎ', 'ﾏ', 'ﾐ', 'ﾑ', 'ﾒ', 'ﾓ', 'ﾔ', 'ﾕ', 'ﾖ', 'ﾗ',
+            'ﾘ', 'ﾙ', 'ﾚ', 'ﾛ', 'ﾜ', 'ﾝ',
+            // Numbers and Latin letters
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
             'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-            'G', 'U', 'I', 'N', 'E', 'T', 'I', 'K', // GUINETIK
-            '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '=',
-            '+', '[', ']', '{', '}', '|', '\\', ':', ';', '"', '\'', '<', '>',
-            ',', '.', '?', '/', '~', '`'
+            // GUINETIK signature
+            'G', 'U', 'I', 'N', 'E', 'T', 'I', 'K',
+            // Symbols
+            ':', '.', '=', '*', '+', '-', '<', '>', '¦', '|', '/',
         ];
 
         let columns = width;
         let rows = height;
-        let grid_size = columns * rows;
 
-        // Initialize drops to be off-screen (negative positions)
-        let mut drops = Vec::new();
         let mut rng = rand::rng();
+
+        // Initialize drops to be staggered
+        let mut drops = Vec::new();
+        let mut drop_speeds = Vec::new();
+        let mut trail_lengths = Vec::new();
+
         for _ in 0..columns {
             drops.push(-(rng.random_range(0..rows) as f32));
+            drop_speeds.push(rng.random_range(0.5..1.5));
+            trail_lengths.push(rng.random_range(8..20));
         }
 
-        // Initialize character grid
+        // Initialize character grid (column-major storage)
         let mut chars = Vec::new();
-        for _ in 0..grid_size {
-            chars.push(' ');
+        for _ in 0..columns {
+            let mut column = Vec::new();
+            for _ in 0..rows {
+                column.push(' ');
+            }
+            chars.push(column);
         }
 
         Self {
             columns,
             rows,
             drops,
+            drop_speeds,
+            trail_lengths,
             chars,
             terminal_width: width,
             terminal_height: height,
@@ -71,48 +90,74 @@ impl MatrixMotion {
 
     fn update_drops(&mut self) {
         let mut rng = rand::rng();
-        
+
         // Move drops down and reset when they go off screen
         for i in 0..self.drops.len() {
-            if self.drops[i] > self.rows as f32 + 10.0 || rng.random_bool(0.025) {
-                // Reset drop to off-screen position
+            let trail_end = self.drops[i] - self.trail_lengths[i] as f32;
+
+            if trail_end > self.rows as f32 + 5.0 {
+                // Reset drop to off-screen position with new properties
                 self.drops[i] = -(rng.random_range(0..self.rows) as f32);
+                self.drop_speeds[i] = rng.random_range(0.5..1.5);
+                self.trail_lengths[i] = rng.random_range(8..20);
             } else {
-                // Move drop down
-                self.drops[i] += 1.0;
+                // Move drop down at its speed
+                self.drops[i] += self.drop_speeds[i];
             }
         }
     }
 
     fn update_grid(&mut self) {
         let mut rng = rand::rng();
-        
-        // Update each character in the grid
-        for row in 0..self.rows {
-            for col in 0..self.columns {
-                let index = row * self.columns + col;
-                let drop_pos = self.drops[col];
-                
-                // Head of drop - bright white
-                if row as f32 == drop_pos.floor() {
-                    self.chars[index] = self.get_random_symbol();
+
+        // Clear and update each column
+        for col in 0..self.columns {
+            let drop_pos = self.drops[col];
+            let trail_length = self.trail_lengths[col];
+
+            for row in 0..self.rows {
+                let row_f = row as f32;
+
+                // Head of drop - place new character
+                if row_f >= drop_pos.floor() && row_f < drop_pos.floor() + 1.0 && drop_pos >= 0.0 {
+                    self.chars[col][row] = self.get_random_symbol();
                 }
-                // Tail of drop - fading green
-                else if (row as f32) < drop_pos && (row as f32) > drop_pos - 8.0 {
-                    // Keep the character but it will be rendered with fading green
-                    if rng.random_bool(0.1) {
-                        self.chars[index] = self.get_random_symbol();
+                // Trail area - occasionally update characters
+                else if row_f < drop_pos && row_f > drop_pos - trail_length as f32 {
+                    // Occasionally change characters in the trail for that "glitchy" effect
+                    if rng.random_bool(0.05) {
+                        self.chars[col][row] = self.get_random_symbol();
                     }
                 }
-                // Empty space - occasionally show random characters
-                else {
-                    if rng.random_bool(0.05) {
-                        self.chars[index] = self.get_random_symbol();
+                // Outside trail - clear or occasionally show random faint character
+                else if row_f > drop_pos || row_f < drop_pos - trail_length as f32 {
+                    if rng.random_bool(0.01) {
+                        self.chars[col][row] = self.get_random_symbol();
                     } else {
-                        self.chars[index] = ' ';
+                        self.chars[col][row] = ' ';
                     }
                 }
             }
+        }
+    }
+
+    fn get_green_color(&self, position_in_trail: f32, trail_length: usize) -> u8 {
+        // Use proper green colors from the 256-color palette
+        // Colors 40-51 are various shades of green in the RGB cube
+        let normalized_pos = (position_in_trail / trail_length as f32).clamp(0.0, 1.0);
+
+        // Map to green colors: 46 (bright green) -> 40 (dark green) -> 22 (very dark)
+        if normalized_pos < 0.3 {
+            // Bright part of trail
+            46 // Bright green
+        } else if normalized_pos < 0.5 {
+            40 // Medium-bright green
+        } else if normalized_pos < 0.7 {
+            34 // Medium green
+        } else if normalized_pos < 0.85 {
+            28 // Darker green
+        } else {
+            22 // Very dark green
         }
     }
 }
@@ -121,20 +166,42 @@ impl Motion for MatrixMotion {
     fn update(&mut self) {
         // Get the latest terminal dimensions in case they changed
         if let Some((w, h)) = term_size::dimensions() {
-            self.terminal_width = w.saturating_sub(2);
-            self.terminal_height = h; // Use full height
-            self.columns = self.terminal_width;
-            self.rows = self.terminal_height;
-            
-            // Resize drops array if needed
-            if self.drops.len() != self.columns {
-                self.drops.resize(self.columns, -1.0);
-            }
-            
-            // Resize chars array if needed
-            let new_size = self.columns * self.rows;
-            if self.chars.len() != new_size {
-                self.chars.resize(new_size, ' ');
+            let new_width = w.saturating_sub(2);
+            let new_height = h;
+
+            // Only resize if dimensions changed
+            if new_width != self.columns || new_height != self.rows {
+                self.terminal_width = new_width;
+                self.terminal_height = new_height;
+
+                let old_columns = self.columns;
+                self.columns = new_width;
+                self.rows = new_height;
+
+                // Resize/reinitialize arrays
+                if self.drops.len() != self.columns {
+                    self.drops.resize(self.columns, -1.0);
+                    self.drop_speeds.resize(self.columns, 1.0);
+                    self.trail_lengths.resize(self.columns, 10);
+                }
+
+                // Resize chars grid (column-major)
+                if old_columns != self.columns {
+                    let mut new_chars = Vec::new();
+                    for _ in 0..self.columns {
+                        let mut column = Vec::new();
+                        for _ in 0..self.rows {
+                            column.push(' ');
+                        }
+                        new_chars.push(column);
+                    }
+                    self.chars = new_chars;
+                } else {
+                    // Just resize each column
+                    for col in 0..self.columns {
+                        self.chars[col].resize(self.rows, ' ');
+                    }
+                }
             }
         }
 
@@ -155,23 +222,32 @@ impl Motion for MatrixMotion {
         // Render the matrix
         for row in 0..self.rows {
             for col in 0..self.columns {
-                let index = row * self.columns + col;
-                let char_to_display = self.chars[index];
+                let char_to_display = self.chars[col][row];
                 let drop_pos = self.drops[col];
-                
-                // Determine color and brightness based on position relative to drop
-                if row as f32 == drop_pos.floor() {
-                    // Head of drop - bright white
-                    print!("\x1B[38;5;15m{}", char_to_display);
-                } else if (row as f32) < drop_pos && (row as f32) > drop_pos - 8.0 {
-                    // Tail of drop - fading green
-                    let distance_from_head = drop_pos - row as f32;
-                    let opacity = (0.9 - distance_from_head * 0.1).max(0.1);
-                    let green_intensity = (opacity * 7.0) as u8 + 22; // Scale to green range 22-29
-                    print!("\x1B[38;5;{}m{}", green_intensity, char_to_display);
-                } else {
-                    // Empty space - very dim green
+                let trail_length = self.trail_lengths[col];
+                let row_f = row as f32;
+
+                // Determine color based on position relative to drop
+                if row_f >= drop_pos.floor() && row_f < drop_pos.floor() + 1.0 && drop_pos >= 0.0 {
+                    // Head of drop - bright white with slight green tint
+                    print!("\x1B[38;5;231m\x1B[1m{}\x1B[0m", char_to_display);
+                } else if row_f < drop_pos && row_f > drop_pos - trail_length as f32 {
+                    // Trail - fading green
+                    let distance_from_head = drop_pos - row_f;
+                    let color = self.get_green_color(distance_from_head, trail_length);
+
+                    // Add bold for brighter characters near the head
+                    if distance_from_head < 3.0 {
+                        print!("\x1B[38;5;{};1m{}\x1B[0m", color, char_to_display);
+                    } else {
+                        print!("\x1B[38;5;{}m{}", color, char_to_display);
+                    }
+                } else if char_to_display != ' ' {
+                    // Random faint characters - very dark green
                     print!("\x1B[38;5;22m{}", char_to_display);
+                } else {
+                    // Empty space
+                    print!(" ");
                 }
             }
             println!();
